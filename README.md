@@ -1,4 +1,4 @@
-# 「 douyin_video 」
+# 「 remove_watermark 」
 
 <div align="right">
     <a href="https://github.com/fmw666/fastapi-builder/"><b>fastapi-builder 项目网址 ➡</b></a>
@@ -58,7 +58,7 @@ SECRET_KEY=OauIrgmfnwCdxMBWpzPF7vfNzga1JVoiJi0hqz3fzkY
 # 第 53 行，值同 .env 文件中 DB_CONNECTION
 sqlalchemy.url = mysql+pymysql://root:admin@localhost/dbname
 ```
-    
+
 *（当您开始尝试阅读 [server/core/config.py](#no-reply) 文件后，您可以开始编写更多相关配置）*
 
 **2. 启用数据库**
@@ -93,21 +93,19 @@ project
 │   │   │── validation_error.py   - 验证错误处理方法
 │   ├── routes/                   - web routes 路由.
 │   │   ├── api.py                - 总路由接口
-│   │   └── authentication.py     - 认证相关（登录、注册）路由
-├── app_user/                     - user 应用.
-│   ├── api.py                    - 提供 user 接口方法
-│   ├── model.py                  - 提供 user 表模型
-│   ├── schema.py                 - 提供 user 结构模型
+├── app/                     	  - user 应用.
+│   ├── app_douyin/               - user 应用1.
+│   │   │── douyin_url_parse.py   - 提供 user 算法
+│   │   │── api.py                - 提供 user 接口方法
+│   │   │── model.py              - 提供 user 表模型
+│   │   │── schema.py             - 提供 user 结构模型
+│   ├── app_redbook/              - user 应用2.
+│   │   │── redbook_url_parse.py  - 提供 user 算法
 ├── core/                         - 项目核心配置, 如: 配置文件, 事件句柄, 日志.
 │   ├── .env                      - 配置文件.
 │   ├── config.py                 - 解析配置文件, 用于其他文件读取配置.
 │   ├── events.py                 - 定义 fastapi 事件句柄.
 │   ├── logger.py                 - 定义项目日志方法.
-├── db/                           - 数据库相关.
-│   ├── base.py                   - 导入所有应用 model.
-│   └── database.py               - sqlalchemy 方法应用.
-│   ├── errors.py                 - 数据库相关错误异常.
-│   ├── events.py                 - 数据库相关事件句柄.
 ├── lib/                          - 自定义库
 │   ├── jwt.py                    - 用户认证 jwt 方法.
 │   ├── security.py               - 加密相关方法.
