@@ -8,4 +8,4 @@ router = APIRouter()
 @router.post("/health", name="健康检查")
 @router.get("/health", name="健康检查")
 async def health():
-    return Response()
+    pass

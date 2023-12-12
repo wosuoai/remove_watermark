@@ -11,7 +11,7 @@ from models.BaseResult import Response
 
 async def http422_error_handler( _: Request, exc: Union[RequestValidationError, ValidationError],) -> JSONResponse:
     return JSONResponse(
-        content=Response(code=HTTP_422_UNPROCESSABLE_ENTITY, data={}, message=str(exc.errors()), method_code=0),
+        content=Response(code=HTTP_422_UNPROCESSABLE_ENTITY, data={}, message=str(exc.errors())),
         status_code=HTTP_422_UNPROCESSABLE_ENTITY,
     )
 
