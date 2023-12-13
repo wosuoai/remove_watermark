@@ -1,2 +1,2 @@
 # remove_watermark
-yuchajia@gmail.com
+抖音小红书 小程序接入
