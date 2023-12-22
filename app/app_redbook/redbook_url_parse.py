@@ -33,7 +33,7 @@ def get_real_html(target_url: str) -> str:
     """
     logger.info(f"小红书请求url:{target_url} 小红书请求头：{headers}")
     img_html = requests.get(target_url, headers=headers, proxies=proxies).text  # 调取静态接口
-    logger.debug(f"小红书静态接口返回数据：{img_html}")
+    logger.debug(f"小红书静态接口返回数据成功")
     return img_html
 
 def redbook_real_imgurl(html: str) -> dict:

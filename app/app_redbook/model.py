@@ -4,5 +4,5 @@ from models.base import Base
 from models.mixins import DateTimeModelMixin, SoftDeleteModelMixin
 
 
-class DouyinVideo(Base, DateTimeModelMixin, SoftDeleteModelMixin):
+class RedbookVideo(Base, DateTimeModelMixin, SoftDeleteModelMixin):
     __tablename__ = "redbook_image"
