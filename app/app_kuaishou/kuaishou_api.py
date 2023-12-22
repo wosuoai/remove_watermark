@@ -8,7 +8,7 @@ router = APIRouter()
 
 def create_kuaishou_image(kuaishou_dto: KuaishouDto):
     try:
-        logger.info("使用抖音自定义算法解析")
+        logger.info("使用快手自定义算法解析")
         kuaishou_url_dto = analyze_kuaishou(kuaishou_dto.url)
         return Response(code=200,data=kuaishou_url_dto)
     except Exception as error:
