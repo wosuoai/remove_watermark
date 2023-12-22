@@ -4,21 +4,9 @@ import requests
 import http.client
 from fake_useragent import UserAgent
 from models.BussinessException import BussinessException
+from core.set_proxy import useable_ip
 
-def set_proxy():
-    """
-    set proxy for requests
-    :param proxy_dict
-    :return:
-    """
-    # if self.enableIpProxy:
-    #     res = requests.get(url="").text.strip()
-    #     return {
-    #         "http": "http://{}".format(res),
-    #         "https": "http://{}".format(res)
-    #     }
-    # else:
-    return None
+proxies = useable_ip()
 
 def parse_share_id(share_url: str) -> str:
     """
@@ -29,7 +17,7 @@ def parse_share_id(share_url: str) -> str:
         'user-agent': UserAgent().random,
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     }
-    response_text = requests.get(share_url, headers=headers, allow_redirects=False, proxies=set_proxy()).text
+    response_text = requests.get(share_url, headers=headers, allow_redirects=False, proxies=proxies).text
     # 使用正则表达式提取href属性
     href_match = re.search(r'href="([^"]+)"', response_text)
     if href_match.group(1) == "":
@@ -99,7 +87,7 @@ def parse_real_imgurl(share_url: str, web_img_url: str) -> dict:
         desc = ""
     logger.debug(f"抖音图文文案是：{desc}")
 
-    response = requests.get(web_img_url, headers=headers, proxies=set_proxy()).text
+    response = requests.get(web_img_url, headers=headers, proxies=proxies).text
     html = response.replace("\\u002F", "/").replace("\n", "").replace(" ", "")
     logger.debug(f"抖音图文接口返回信息是：{html}")
     mp3 = re.search(r'src="(https\:\/\/sf3-cdn-tos.douyinstatic.com.*?)"', html).group(1)  # 音频
@@ -190,7 +178,7 @@ def parse_real_video(web_video_url: str, detail_url: str, cookie: str) -> dict:
         "user-agent": UserAgent().random,
     }
 
-    response = requests.post(detail_url, headers=headers, proxies=set_proxy())
+    response = requests.post(detail_url, headers=headers, proxies=proxies)
     logger.debug(f"抖音视频接口返回的信息：{response.text}")
     title = re.search(r'"title":"(.*?)"', response.text).group(1)  # 标题
     logger.debug(f"抖音视频的标题是：{title}")
@@ -217,6 +205,7 @@ def analyze_douyin(douyin_share_url: str):
     """
         如果返回为空字符串表示没有成功解析
     """
+    logger.debug(f"拿到的可用ip是：{proxies}")
     # 传入参数 --> 抖音分享的url
     logger.info(f"抖音传入的url是：{douyin_share_url}")
     share_url = re.search(r'https?://\S+', douyin_share_url)

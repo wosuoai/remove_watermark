@@ -4,26 +4,14 @@ import requests
 import lxml.etree
 from models.BussinessException import BussinessException
 from core.logger import logger
+from core.set_proxy import useable_ip
 
 headers = {
         "Referer": "https://www.xiaohongshu.com/",
         "user-agent": UserAgent().random
     }
 
-def set_proxy():
-    """
-    set proxy for requests
-    :param proxy_dict
-    :return:
-    """
-    # if self.enableIpProxy:
-    #     res = requests.get(url="").text.strip()
-    #     return {
-    #         "http": "http://{}".format(res),
-    #         "https": "http://{}".format(res)
-    #     }
-    # else:
-    return None
+proxies = useable_ip()
 
 def redbook_real_weburl(share_url: str) -> str:
     """
@@ -44,7 +32,7 @@ def get_real_html(target_url: str) -> str:
         调接口先拿到html，方便后续判断是图文链接还是视频链接
     """
     logger.info(f"小红书请求url:{target_url} 小红书请求头：{headers}")
-    img_html = requests.get(target_url, headers=headers, proxies=set_proxy()).text  # 调取静态接口
+    img_html = requests.get(target_url, headers=headers, proxies=proxies).text  # 调取静态接口
     logger.debug(f"小红书静态接口返回数据：{img_html}")
     return img_html
 
@@ -110,6 +98,7 @@ def parse_real_videoUrl(url: str) -> dict:
     return get_video_link(html)
 
 def analyze_redbook(redbook_share_url: str):
+    logger.debug(f"拿到的可用ip是：{proxies}")
     logger.info(f"小红书传入的url是：{redbook_share_url}")
     html = get_real_html(redbook_real_weburl(redbook_share_url))
     if "originVideoKey" in html:
