@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-import app.app_douyin.api as douyin # 注册抖音图文或视频解析路由
-import app.app_redbook.api as redbook # 注册小红书图文或视频解析路由
+import app.app_douyin.douyin_api as douyin # 注册抖音图文或视频解析路由
+import app.app_redbook.redbook_api as redbook # 注册小红书图文或视频解析路由
 import app.baseAPI as baseAPI
 router = APIRouter()
 

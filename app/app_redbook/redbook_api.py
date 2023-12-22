@@ -7,7 +7,6 @@ from .redbook_url_parse import analyze_redbook
 from models.BaseResult import Response,KownedException
 router = APIRouter()
 
-#@router.post("/real_parse", name="小红书图片或视频链接解析")
 def create_redbook_image(redbook_dto: RedbookDto):
     try:
         logger.info("使用小红书自定义算法解析")
