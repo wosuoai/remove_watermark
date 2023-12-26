@@ -10,7 +10,7 @@ router = APIRouter()
 def create_redbook_image(redbook_dto: RedbookDto):
     try:
         logger.info("使用小红书自定义算法解析")
-        redbook_url_dto = analyze_redbook(redbook_dto.url)
+        redbook_url_dto = analyze_redbook(redbook_dto.url,redbook_dto.proxies_status)
         return Response(code=200,data=redbook_url_dto)
     except Exception as error:
         logger.error(f"redbook_url_parse::create_redbook_image: 小红书自定义算法解析异常：{str(error)}")

@@ -4,11 +4,11 @@ import requests
 import http.client
 from fake_useragent import UserAgent
 from models.BussinessException import BussinessException
+import json
 from core.set_proxy import useable_ip
+from typing import Any
 
-proxies = useable_ip()
-
-def parse_share_id(share_url: str) -> str:
+def parse_share_id(share_url: str, proxied: Any) -> str:
     """
         解析分享的url指向的网页视频url
     """
@@ -17,7 +17,7 @@ def parse_share_id(share_url: str) -> str:
         'user-agent': UserAgent().random,
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     }
-    response_text = requests.get(share_url, headers=headers, allow_redirects=False, proxies=proxies).text
+    response_text = requests.get(share_url, headers=headers, allow_redirects=False, proxies=proxied).text
     # 使用正则表达式提取href属性
     href_match = re.search(r'href="([^"]+)"', response_text)
     if href_match.group(1) == "":
@@ -63,16 +63,17 @@ def get_ac_nonce() -> str:
     __ac_nonce = sess.get(url, headers=headers_base).cookies.get('__ac_nonce')
     return __ac_nonce
 
-def parse_real_imgurl(share_url: str, web_img_url: str) -> dict:
+def parse_real_imgurl(share_url: str, web_img_url: str, proxied: Any) -> dict:
     """
         解析抖音无水印的图片url链接
     """
     headers = {
         'authority': 'www.douyin.com',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'cookie': '__ac_nonce=06192fe1600efd2f548a4; __ac_signature=_02B4Z6wo00f010oZ.OAAAIDDSL4VSgFGbQNKOPhAALMfzkcLVN8kvHY8F8.4A5amrjhSxq1fBh5cV3Mb3lmu6n1vBZEZ7g2-OJbAE0HGGN.q9D4vlb32.SAnb8XjxYYKuIgSkmi4eQazA1DF9a',
-        'user-agent': UserAgent().random,
+        'cookie': '__ac_nonce=0657c0e8c00fb46ba43bd; __ac_signature=_02B4Z6wo00f01vcJCkgAAIDByqAQ1beFwp73KQ7AANjLbZWS9MJW0Q-wv-f80u4IedFNiXORCD91EBezGEIxR9Gv3xp8BQhBvDuFfE1nJpJjrHRR5QjxqFLOs75iDxqyTr9-PXJKvOheKHmv97',
+        'user-agent': UserAgent().random
     }
+    logger.debug(f"抖音图文请求url:{share_url} 抖音图文请求头：{headers}")
     try:
         tags = re.findall(r"#(\w+)", share_url.replace(" ",""))  # 标签
         tags[-1] = tags[-1].split("https")[0]
@@ -87,10 +88,17 @@ def parse_real_imgurl(share_url: str, web_img_url: str) -> dict:
         desc = ""
     logger.debug(f"抖音图文文案是：{desc}")
 
-    response = requests.get(web_img_url, headers=headers, proxies=proxies).text
-    html = response.replace("\\u002F", "/").replace("\n", "").replace(" ", "")
-    logger.debug(f"抖音图文接口返回信息是：{html}")
-    mp3 = re.search(r'src="(https\:\/\/sf3-cdn-tos.douyinstatic.com.*?)"', html).group(1)  # 音频
+    response = requests.get(web_img_url, headers=headers, proxies=proxied).text
+    if "Pleasewait..." in response:
+        logger.error("抖音自定义算法调取抖音图文接口失败——因IP被风控")
+        raise BussinessException("抖音自定义算法调取抖音图文接口失败——因IP被风控")
+    html = response.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("\\","")
+    logger.debug(f"抖音图文接口返回信息成功")
+    try:
+        pattern = r'src="https://sf3-cdn-tos.douyinstatic.com/[^"]*"'  # 音频
+        mp3 = re.findall(pattern, html)[0].split('"')[1]
+    except Exception as error:
+        mp3 = ""
     logger.debug(f"抖音图文音频是：{mp3}")
     pattern = re.compile(r'src="(https\:\/\/[^"]+?tplv\-dy\-aweme\-images:[^"]+)"')
     # 提取所有的图片并去重
@@ -167,7 +175,7 @@ def get_ttwid(detail_url: str) -> str:
 #         print(error)
 #         return ''
 
-def parse_real_video(web_video_url: str, detail_url: str, cookie: str) -> dict:
+def parse_real_video(web_video_url: str, detail_url: str, cookie: str, proxied: Any) -> dict:
     """
         解析无水印的url链接
     """
@@ -178,17 +186,24 @@ def parse_real_video(web_video_url: str, detail_url: str, cookie: str) -> dict:
         "user-agent": UserAgent().random,
     }
 
-    response = requests.post(detail_url, headers=headers, proxies=proxies)
-    logger.debug(f"抖音视频接口返回的信息：{response.text}")
+    response = requests.post(detail_url, headers=headers, proxies=proxied)
+    logger.debug(f"抖音视频请求url:{detail_url} 抖音视频请求头：{headers}")
+    logger.debug(f"抖音视频接口返回信息成功")
     title = re.search(r'"title":"(.*?)"', response.text).group(1)  # 标题
     logger.debug(f"抖音视频的标题是：{title}")
-    html = response.text.replace("\\u002F", "/").replace("\n", "").replace(" ", "")
+    html = response.text.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("\\u0026", "&")
     desc = re.search(r'"desc":"(.*?)"', html).group(1)  # 文案
     logger.debug(f"抖音视频的文案是：{desc}")
     tags = re.findall(r"#(\w+)", desc)  # 标签
     logger.debug(f"抖音视频的标签是：{tags}")
     mp3 = re.search(r'"uri":"(https\:\/\/.*?\.mp3)"', html).group(1) #音频
     logger.debug(f"抖音视频的音频是：{mp3}")
+    pattern = r'https://p9-pc-sign.douyinpic.com/tos-cn-p-0015/[^"]+'
+    try:
+        first_img = re.findall(pattern, html)[0]  # 抖音视频封面图
+    except Exception as error:
+        first_img = ""
+    logger.debug(f"抖音视频的封面图是：{first_img}")
     real_video_id = response.json()['aweme_detail']['video']['play_addr']['uri']
     logger.debug(f"抖音视频的无水印视频id是：{real_video_id}")
     if real_video_id == "":
@@ -197,27 +212,53 @@ def parse_real_video(web_video_url: str, detail_url: str, cookie: str) -> dict:
     video_url = "https://aweme.snssdk.com/aweme/v1/play/?video_id=" + real_video_id + "&ratio=720p&line=0" #无水印视频链接
     # 无音频的视频文件，接口里面没有，返回空
     detail_dict = {}
-    detail_dict.update({"title": title, "desc": desc, "tags": tags, "music": mp3, "video_without_mp3": "", "real_video_url": video_url, "link_type": 1, "method_code": 0})
+    detail_dict.update({"title": title, "desc": desc, "tags": tags, "music": mp3, "video_without_mp3": "", "first_img": first_img, "real_video_url": video_url, "link_type": 1, "method_code": 0})
     logger.debug(f"抖音视频返回的信息：{detail_dict}")
     return detail_dict
 
-def analyze_douyin(douyin_share_url: str):
+def reg_share_url(douyin_share_url: str) -> str:
     """
-        如果返回为空字符串表示没有成功解析
+        正则提取用户分享的链接
     """
-    logger.debug(f"拿到的可用ip是：{proxies}")
-    # 传入参数 --> 抖音分享的url
-    logger.info(f"抖音传入的url是：{douyin_share_url}")
     share_url = re.search(r'https?://\S+', douyin_share_url)
     if share_url == None:
         logger.error("抖音分享链接提取失败")
         raise BussinessException("抖音分享链接提取失败")
-    if "图文" in douyin_share_url:
-        web_url = "https://www.douyin.com/note/" + parse_share_id(share_url.group())
-        real_download_url = parse_real_imgurl(douyin_share_url,web_url)
+    logger.debug(f"正则提取抖音分享后的链接：{share_url.group()}")
+    return share_url.group()
+
+def judge_share_url(douyin_share_url: str) -> str:
+    """
+        判断用户传入的链接是图文还是视频
+    """
+    judge_imgList = ["图文", "背景图"]
+    for judge in judge_imgList:
+        if judge in douyin_share_url:
+            logger.debug("抖音用户分享链接是图文")
+            return "image"
+        else:
+            logger.debug("抖音用户分享链接是视频")
+            return "video"
+
+def analyze_douyin(douyin_share_url: str, proxies_status: int):
+    """
+        如果返回为空字符串表示没有成功解析
+    """
+    # 传入参数 --> 抖音分享的url
+    logger.info(f"抖音传入的url是：{douyin_share_url}，代理IP状态：{proxies_status}")
+    if proxies_status == 1:
+        proxied = useable_ip()
     else:
-        web_url = "https://www.douyin.com/video/" + parse_share_id(share_url.group())
+        proxied = None
+    logger.info(f"此次解析拿到的代理IP是：{proxied}")
+
+    reg_url = reg_share_url(douyin_share_url)
+    if judge_share_url(douyin_share_url) == "image":
+        web_url = "https://www.douyin.com/note/" + parse_share_id(reg_url,proxied)
+        real_download_url = parse_real_imgurl(douyin_share_url,web_url,proxied)
+    else:
+        web_url = "https://www.douyin.com/video/" + parse_share_id(reg_url,proxied)
         detail_url = return_detail_url(web_url)
         cookie = get_ttwid(detail_url)
-        real_download_url = parse_real_video(web_url, detail_url, cookie)
+        real_download_url = parse_real_video(web_url, detail_url, cookie,proxied)
     return real_download_url

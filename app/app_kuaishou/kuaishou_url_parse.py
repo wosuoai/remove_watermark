@@ -4,6 +4,7 @@ import lxml.etree
 import re
 from models.BussinessException import BussinessException
 from core.logger import logger
+from typing import Any
 from core.set_proxy import useable_ip
 
 cookies = {
@@ -15,15 +16,13 @@ headers = {
     'User-Agent': UserAgent().random,
 }
 
-proxies = useable_ip()
-
-def get_real_html(share_url: str) -> str:
+def get_real_html(share_url: str, proxied: Any) -> str:
     """
     调取快手静态接口
     :param share_url:
     :return:
     """
-    kuaishou_html = requests.get(share_url, cookies=cookies, headers=headers, proxies=proxies).text.replace("\n","").replace(" ","").replace("\\u002F","/")
+    kuaishou_html = requests.get(share_url, cookies=cookies, headers=headers, proxies=proxied).text.replace("\n","").replace(" ","").replace("\\u002F","/")
     logger.debug(f"快手静态接口返回数据成功")
     return kuaishou_html
 
@@ -34,19 +33,19 @@ def get_video_link(html_body: str) -> dict:
     :return:
     """
     title = lxml.etree.HTML(html_body).xpath("//title/text()")[0]  # 标题
-    logger.debug(f"抖音视频标题：{title}")
+    logger.debug(f"快手视频标题：{title}")
     tags = re.findall(r"#(\w+)", title.replace(" ",""))  # 标签
-    logger.debug(f"抖音视频标签：{tags}")
+    logger.debug(f"快手视频标签：{tags}")
     first_img = re.search(r'"coverUrl":\s*"([^"]*)"', html_body).group(1) # 视频封面图
-    logger.debug(f"抖音视频封面图链接：{first_img}")
+    logger.debug(f"快手视频封面图链接：{first_img}")
     video_link = re.search(r'"photoUrl":\s*"([^"]*)"', html_body).group(1) # 视频无水印链接
-    logger.debug(f"抖音视频无水印链接：{video_link}")
+    logger.debug(f"快手视频无水印链接：{video_link}")
     if video_link == "":
-        logger.debug("抖音视频信息提取失败")
-        raise BussinessException("抖音视频信息提取失败")
+        logger.debug("快手视频信息提取失败")
+        raise BussinessException("快手视频信息提取失败")
     detail_dict = {}
     detail_dict.update({"title": title, "desc": "", "tags": tags, "music": "", "video_without_mp3": "", "first_img": first_img, "real_video_url": video_link, "link_type": 1, "method_code": 0})
-    logger.debug(f"抖音视频返回信息：{detail_dict}")
+    logger.debug(f"快手视频返回信息：{detail_dict}")
     return detail_dict
 
 def get_photoId(html_body: str) -> str:
@@ -59,5 +58,11 @@ def get_photoId(html_body: str) -> str:
     logger.debug(f"提取出快手的photoId是：{VisionVideoDetailPhoto}")
     return VisionVideoDetailPhoto
 
-def analyze_kuaishou(share_url: str):
-    return get_video_link(get_real_html(share_url))
+def analyze_kuaishou(share_url: str, proxies_status: int):
+    logger.info(f"快手传入的url是：{share_url}，代理IP状态：{proxies_status}")
+    if proxies_status == 1:
+        proxied = useable_ip()
+    else:
+        proxied = None
+    logger.info(f"此次解析拿到的代理IP是：{proxied}")
+    return get_video_link(get_real_html(share_url,proxied))

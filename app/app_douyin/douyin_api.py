@@ -22,7 +22,7 @@ DELETE /api/douyin_videos/{douyin_video_id}   ->  delete_douyin_video  ->  删�
 def create_douyin_realUrl(douyin_url_dto: DouyinUrlDto):
     try:
         logger.info("使用抖音自定义算法解析")
-        douyin_url_dto = analyze_douyin(douyin_url_dto.url)
+        douyin_url_dto = analyze_douyin(douyin_url_dto.url,douyin_url_dto.proxies_status)
         return Response(code=200,data=douyin_url_dto)
     except Exception as error:
         logger.error(f"douyin_url_parse::create_douyin_realUrl: 抖音自定义算法解析异常：{str(error)}")
