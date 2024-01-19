@@ -58,9 +58,9 @@ def redbook_real_imgurl(html: str) -> dict:
     logger.debug(f"小红书图文标签：{tags}")
     url_pattern = re.compile(r'"url":"(.*?)"')
     imgurl_list = url_pattern.findall(html)
-    real_imgs = [url for url in imgurl_list if 'wm_1' in url]#无水印图片链接
+    real_imgs = [url for url in imgurl_list if 'dft' in url]#无水印图片链接
     logger.debug(f"小红书图文无水印图片链接：{real_imgs}")
-    plant_imgs = [url for url in imgurl_list if 'prv_1' in url] #有水印图片链接
+    plant_imgs = [url for url in imgurl_list if 'prv' in url] #有水印图片链接
     logger.debug(f"小红书图文有水印图片链接：{plant_imgs}")
     if plant_imgs == []:
         logger.debug("小红书图文信息提取失败")
