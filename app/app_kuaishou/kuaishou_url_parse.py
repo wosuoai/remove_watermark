@@ -8,7 +8,7 @@ from typing import Any
 from core.set_proxy import useable_ip
 
 cookies = {
-    'did': 'web_50a6d089a9d08c2e42ed768f997af787',
+    'did': '',
 }
 
 headers = {
@@ -48,6 +48,28 @@ def get_video_link(html_body: str) -> dict:
     logger.debug(f"快手视频返回信息：{detail_dict}")
     return detail_dict
 
+def get_imgs_link(html_body: str) -> dict:
+    """
+    正则需要的有效信息
+    :param html_body:
+    :return:
+    """
+    title = lxml.etree.HTML(html_body).xpath("//title/text()")[0]  # 标题
+    logger.debug(f"快手图文标题：{title}")
+    tags = re.findall(r"#(\w+)", title.replace(" ",""))  # 标签
+    logger.debug(f"快手图文标签：{tags}")
+    first_img = re.search(r'"coverUrl":\s*"([^"]*)"', html_body).group(1) # 视频封面图
+    logger.debug(f"快手图文封面图链接：{first_img}")
+    video_link = re.search(r'"photoUrl":\s*"([^"]*)"', html_body).group(1) # 视频无水印链接
+    logger.debug(f"快手图文视频链接：{video_link}")
+    if video_link == "":
+        logger.debug("快手图文信息提取失败")
+        raise BussinessException("快手图文信息提取失败")
+    detail_dict = {}
+    detail_dict.update({"title": title, "desc": "", "tags": tags, "music": "", "video_without_mp3": "", "first_img": first_img, "real_video_url": video_link, "link_type": 0, "method_code": 0})
+    logger.debug(f"快手图文返回信息：{detail_dict}")
+    return detail_dict
+
 def get_photoId(html_body: str) -> str:
     """
     photoId是评论接口的一个必要参数
@@ -65,4 +87,10 @@ def analyze_kuaishou(share_url: str, proxies_status: int):
     else:
         proxied = None
     logger.info(f"此次解析拿到的代理IP是：{proxied}")
-    return get_video_link(get_real_html(share_url,proxied))
+    kuaishou_html = get_real_html(share_url,proxied)
+    if "图文" in kuaishou_html:
+        logger.debug("该分享链接是：快手图文链接")
+        return get_imgs_link(kuaishou_html)
+    else:
+        logger.debug("该分享链接是：快手视频链接")
+        return get_video_link(kuaishou_html)
