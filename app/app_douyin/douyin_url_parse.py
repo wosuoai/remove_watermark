@@ -20,6 +20,7 @@ def parse_share_id(share_url: str, proxied: Any) -> str:
     response_text = requests.get(share_url, headers=headers, allow_redirects=False, proxies=proxied).text
     # 使用正则表达式提取href属性
     href_match = re.search(r'href="([^"]+)"', response_text)
+    logger.debug(href_match)
     if href_match.group(1) == "":
         logger.error("抖音分享url指向网页url解析失败")
         raise BussinessException("抖音分享url指向网页url解析失败")
@@ -194,7 +195,10 @@ def parse_real_video(web_video_url: str, detail_url: str, cookie: str, proxied: 
     html = response.text.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("\\u0026", "&")
     desc = re.search(r'"desc":"(.*?)"', html).group(1)  # 文案
     logger.debug(f"抖音视频的文案是：{desc}")
-    tags = re.findall(r"#(\w+)", desc)  # 标签
+    try:
+        tags = re.findall(r"#(\w+)", desc)  # 标签
+    except Exception as error:
+        tags = []
     logger.debug(f"抖音视频的标签是：{tags}")
     mp3 = re.search(r'"uri":"(https\:\/\/.*?\.mp3)"', html).group(1) #音频
     logger.debug(f"抖音视频的音频是：{mp3}")
