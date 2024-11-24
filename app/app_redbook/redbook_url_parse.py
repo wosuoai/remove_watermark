@@ -9,7 +9,7 @@ from core.set_proxy import useable_ip
 from typing import Any
 
 cookies = {
-    'web_session': '040069b54d2fd867c1ce4e0269374b50013583',
+    'web_session': '040069b147824957be30febc0d354bbde3c9be',
 }
 
 headers = {
@@ -30,7 +30,7 @@ def redbook_real_weburl(share_url: str) -> str:
             raise BussinessException("小红书分享链接提取失败")
         logger.debug(f"正则提取小红书分享后的链接：{url_match}")
 
-        return url_match[0]
+    return url_match[0]
 
 def get_real_html(target_url: str, proxied: Any) -> str:
     """
@@ -56,6 +56,7 @@ def redbook_real_imgurl(html: str) -> dict:
     logger.debug(f"小红书图文文案：{desc}")
     tags = re.findall(r"#(\w+)", desc) #标签
     logger.debug(f"小红书图文标签：{tags}")
+    # 提取图片链接
     url_pattern = re.compile(r'"url":"(.*?)"')
     imgurl_list = url_pattern.findall(html)
     real_imgs = [url for url in imgurl_list if 'dft' in url]#无水印图片链接
@@ -65,8 +66,16 @@ def redbook_real_imgurl(html: str) -> dict:
     if plant_imgs == []:
         logger.debug("小红书图文信息提取失败")
         raise BussinessException("小红书图文信息提取失败")
+    # 提取图片的live格式
+    try:
+        live_pattern = re.findall(r'"masterUrl":\s*"[^"]+"',html)
+        live_urls = []
+        for url in live_pattern:
+            live_urls.append(url.split('"')[-2])
+    except Exception as error:
+        live_urls = ""
     detail_dict = {} #定义一个字典 以字典的格式返回数据
-    detail_dict.update({"title": title, "desc": desc, "tags": tags, "first_img": real_imgs[0], "plant_imgs": plant_imgs, "real_imgs": real_imgs, "link_type": 0, "method_code": 0})
+    detail_dict.update({"title": title, "desc": desc, "tags": tags, "first_img": real_imgs[0], "plant_imgs": plant_imgs, "real_imgs": real_imgs, "live_urls": live_urls, "link_type": 0, "method_code": 0})
     logger.debug(f"小红书图文返回信息：{detail_dict}")
     return detail_dict
 
