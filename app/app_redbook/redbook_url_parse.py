@@ -4,7 +4,7 @@ import requests
 import lxml.etree
 from models.BussinessException import BussinessException
 from core.logger import logger
-import json
+from bs4 import BeautifulSoup
 from core.set_proxy import useable_ip
 from typing import Any
 
@@ -49,12 +49,14 @@ def redbook_real_imgurl(html: str) -> dict:
     """
         提取抖音图文的有效信息
     """
-    title = lxml.etree.HTML(html).xpath("//title/text()")[0] #标题
+    html = html.replace("\\u002F", "/")
+    soup = BeautifulSoup(html, 'html.parser')
+    title = soup.find("div", id="detail-title").text #标题
     logger.debug(f"小红书图文标题：{title}")
-    html = html.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("[话题]#", "")
-    desc = re.search(r'"desc":"(.*?)"', html).group(1) #文案
+    # html = html.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("[话题]#", "")
+    desc = soup.find('meta', attrs={'name': 'description'}).get("content") #文案
     logger.debug(f"小红书图文文案：{desc}")
-    tags = re.findall(r"#(\w+)", desc) #标签
+    tags = soup.find('meta', attrs={'name': 'keywords'}).get("content") #标签
     logger.debug(f"小红书图文标签：{tags}")
     # 提取图片链接
     url_pattern = re.compile(r'"url":"(.*?)"')
@@ -69,9 +71,7 @@ def redbook_real_imgurl(html: str) -> dict:
     # 提取图片的live格式
     try:
         live_pattern = re.findall(r'"masterUrl":\s*"[^"]+"',html)
-        live_urls = []
-        for url in live_pattern:
-            live_urls.append(url.split('"')[-2])
+        live_urls = [url.split('"')[-2] for url in live_pattern]
     except Exception as error:
         live_urls = ""
     detail_dict = {} #定义一个字典 以字典的格式返回数据
@@ -91,20 +91,20 @@ def get_video_link(html: str) -> dict:
     """
         提取抖音视频所有的有效信息
     """
-    title = lxml.etree.HTML(html).xpath("//title/text()")[0]  # 标题
+    html = html.replace("\\u002F","/")
+    soup = BeautifulSoup(html, 'html.parser')
+    title = soup.find("div", id="detail-title").text  # 标题
     logger.debug(f"小红书视频标题：{title}")
-    html = html.replace("\\u002F", "/").replace("\n", "").replace(" ", "").replace("[话题]#", "")
-    desc = re.search(r'"desc":"(.*?)"', html).group(1)  # 文案
+    desc = soup.find('meta', attrs={'name': 'description'}).get("content") #文案  # 文案
     logger.debug(f"小红书视频文案：{desc}")
-    tags = re.findall(r"#(\w+)", desc)  # 标签
+    tags = soup.find('meta', attrs={'name': 'keywords'}).get("content")  # 标签
     logger.debug(f"小红书视频标签：{tags}")
     try:
         first_img = re.search(r'"urlDefault":"(.*?)"', html).group(1)  # 视频封面图
     except Exception as error:
         first_img = ""
     logger.debug(f"小红书视频封面图：{first_img}")
-    pattern = r'"originVideoKey":"([^"]*)"'
-    match = re.search(pattern, html)
+    match = re.search(r'"originVideoKey":"([^"]*)"', html)
     video_url = format_url(f"https://sns-video-hw.xhscdn.com/{match.group(1)}") #无水印视频链接
     logger.debug(f"小红书视频链接：{video_url}")
     if match.group(1) == "":
